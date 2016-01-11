@@ -4,13 +4,16 @@
   <meta charset="utf-8">
   <title>Bikes!</title>
 </head>
-<img src="/static/bikes.jpg" alt="Bikes" style="width:400px;height200px">
+<link
+    href="http://cdn.pydata.org/bokeh/release/bokeh-0.10.0.min.css"
+    rel="stylesheet" type="text/css">
+<script src="http://cdn.pydata.org/bokeh/release/bokeh-0.10.0.min.js"></script>
+{{plotscript | safe}}
 <div class=page>
   <h3>Bay Area bike share query for date {{date}}:</h3>
   <div class=page>
   <h4>Overall this day had {{tdr}} times the number of rides expected by the model</h4>
-  <h4>Hourly deviation from model expectation (0 = midnight-1AM, etc...)</h4>
-    {{table_html | safe}}  
+    {{plotdiv | safe}} {{zonediv | safe}}
   </div>
   <h4>Try another date?</h4>  <p>
     <form method="post" action="/index"> 

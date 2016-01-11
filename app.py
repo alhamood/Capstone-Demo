@@ -7,6 +7,9 @@ Created on Tue Jan  5 16:28:50 2016
 
 from flask import Flask, render_template, request, redirect
 from wtforms import Form, validators, fields, widgets
+from bokeh.plotting import figure
+from bokeh.embed import components
+from bokeh.charts import Bar
 
 import numpy as np
 import pandas as pd
@@ -37,12 +40,17 @@ with open('datafiles/Hour_Factors.json') as json_data:
 	Hour_Factors = json.load(json_data)
 	json_data.close()
 	
-with open('datafiles/TripTimes.json') as json_data:
-	Trip_Times = json.load(json_data)
+with open('datafiles/Zone_Factors.json') as json_data:
+	Zone_Factors = json.load(json_data)
 	json_data.close()
-Trip_Times = pd.to_datetime(Trip_Times)
+	
+Trip_Data = pd.read_csv('datafiles/Trip_Data.csv', index_col = 0)	
+Trip_Data.index = pd.to_datetime(Trip_Data.index)
+Trip_Times = Trip_Data.index
 first_date = min(Trip_Times)
 last_date = max(Trip_Times)
+Zone_Names = Trip_Data['Zone'].unique()
+print(Zone_Names)
 
 with open('datafiles/Daily_Avg_Starts.json') as json_data:
 	DailyAvgStarts = json.load(json_data)
@@ -52,6 +60,24 @@ class DateForm(Form):
 	test_date = fields.TextField('Experiment Date',  [
 	    validators.InputRequired(message='Experiment Date is Required')])
 
+def Make_Hour_Plot(predicted_starts, observed_starts):
+	p = figure(plot_width=400, plot_height=400, title='Hourly Ride Starts')
+	p.line(range(24), observed_starts[0].tolist(), color='firebrick', alpha = .8, legend='Observed', line_width=4)
+	p.line(range(24), predicted_starts[0].tolist(), color='navy', alpha = .5, legend='Predicted', line_width=4)
+	p.xaxis.axis_label = 'Hour of Day'
+	p.yaxis.axis_label = 'Number of rides'
+	p.legend.orientation = "top_left"
+	return p
+	
+def Make_Zones_Plot(predicted_zone_starts, observed_zone_starts):
+	rides = predicted_zone_starts+observed_zone_starts
+	df = pd.DataFrame(rides)
+	df['Group'] = ['Predicted']*5 + ['Observed']*5
+	df['Zone'] = Zone_Names.tolist() * 2
+	df.columns = ['Rides', 'Group', 'Zone']
+	p = Bar(df, label='Zone', values='Rides', agg='median', group='Group',
+        title="Predicted and Observed Rides by Zone", legend='top_right')
+	return p
 
 @app.route('/')
 def main():
@@ -83,13 +109,27 @@ def index():
 		predicted_hour_factors = pd.DataFrame(pd.DataFrame(Hour_Factors)*DoW_Factors[test_day.weekday()]*Month_Factors[test_day.month-1])
 		predicted_starts = predicted_hour_factors*(DailyAvgStarts/24)
 		actual_starts = pd.DataFrame([sum(test_day_starts.hour==hr) for hr in range(24)])
-		hourly_changes = (actual_starts-predicted_starts)
-		hourly_changes.columns = ['Deviation from expected number of rides']		
-		hours_html = hourly_changes.to_html()
+		hour_plot = Make_Hour_Plot(predicted_starts, actual_starts)
+		day_total_prediction = predicted_starts.sum().tolist()
+		print(day_total_prediction)
+		zone_predictions = [Zone_Factors[zone]*(day_total_prediction[0]/5) for zone in range(5)]
+		print(len(test_day_starts))
+		print(zone_predictions)		
+		test_day_zones = Trip_Data.loc[selector, 'Zone']
+		zone_observations = [np.NaN]*5
+		for z_index, zone in enumerate(Zone_Names):
+			zone_observations[z_index] = sum((test_day_zones==zone).tolist())
+		print(zone_observations)
+		zone_plot = Make_Zones_Plot(zone_predictions, zone_observations)
+		
+		script, div = components(hour_plot)
+		script2, div2 = components(zone_plot)
+		script = script+script2
+		
 		day = form.data['test_date']
 		form = DateForm()
 		tdr = day_residuals[day_residuals.index.date==test_day.date()].values[0]
-		return render_template('results.html', form=form, date=day, table_html=hours_html, tdr=tdr)
+		return render_template('results.html', form=form, date=day, plotscript=script, plotdiv=div, zonediv=div2, tdr=tdr)
 		
 def show_data():
 	test_day='4/28/2014'
@@ -104,4 +144,4 @@ def show_data():
 		
 if __name__ == '__main__':
   port = int(os.environ.get("PORT", 5000))
-  app.run(host='0.0.0.0', port=port, debug=False)
+  app.run(host='0.0.0.0', port=port, debug=True)

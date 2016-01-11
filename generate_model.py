@@ -16,10 +16,18 @@ DailyStarts.index = pd.to_datetime(DailyStarts.index, infer_datetime_format=True
 DailySums = np.sum(DailyStarts, axis=1)
 DailyAvgStarts = (sum(DailyStarts.sum()))/float(len(DailyStarts))
 AllTrips = pd.read_csv('~/Data Incubator/Capstone Project/Data/Bay Area/Combined CSVs/BayTrips_All.csv', index_col = 0)
-triptimes = AllTrips.index.tolist()
+AllTrips = AllTrips[['Start Terminal', 'End Terminal']]
+AllTrips['Zone'] = ''
+stations = pd.read_csv('~/Data Incubator/Capstone Project/Data/Cleaned CSVs/Bay/201408_station_data.csv')
+stations.index = stations['station_id']
+for station in stations['station_id']:
+	selector = (AllTrips['Start Terminal']==station).tolist()
+	AllTrips.loc[selector, 'Zone'] = stations.loc[station, 'landmark']
 
-with open('/Users/alhamood/Data Incubator/Capstone Project/Demo/datafiles/TripTimes.json', 'w') as outfile:
-	json.dump(triptimes, outfile)
+AllTrips.to_csv('/Users/alhamood/Data Incubator/Capstone Project/Demo/datafiles/Trip_Data.csv')
+
+#with open('/Users/alhamood/Data Incubator/Capstone Project/Demo/datafiles/TripTimes.json', 'w') as outfile:
+#	json.dump(triptimes, outfile)
 
 # First find overall effect factors for each day of the week
 Day_of_Week = pd.DataFrame([day.weekday() for day in DailySums.index])
@@ -28,6 +36,15 @@ for day in range(7):
 	selector = (Day_of_Week==day).values.tolist()
 	DoW_Totals[day] = sum(DailyStarts[selector].sum(axis=1))
 DoW_Factors = [DoW_Totals[day]/(float(sum(DoW_Totals))/7) for day in range(7)]
+	
+	
+# Zone factors
+Zones = AllTrips['Zone'].unique()
+Zone_Totals = [np.NaN]*5
+for index, zone in enumerate(Zones):
+	selector = (AllTrips['Zone']==zone).values.tolist()
+	Zone_Totals[index] = sum(selector)
+Zone_Factors = [Zone_Totals[zone]/(float(sum(Zone_Totals))/5) for zone in range(5)]
 	
 # Then month factors
 Month = pd.DataFrame([day.month for day in DailySums.index])
@@ -71,5 +88,8 @@ with open('/Users/alhamood/Data Incubator/Capstone Project/Demo/datafiles/Hour_F
 	
 with open('/Users/alhamood/Data Incubator/Capstone Project/Demo/datafiles/Daily_Avg_Starts.json', 'w') as outfile:
 	json.dump(DailyAvgStarts, outfile)
+	
+with open('/Users/alhamood/Data Incubator/Capstone Project/Demo/datafiles/Zone_Factors.json', 'w') as outfile:
+	json.dump(Zone_Factors, outfile)
 
 day_residuals.to_csv('/Users/alhamood/Data Incubator/Capstone Project/Demo/datafiles/Day_Residuals.csv')
