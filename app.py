@@ -5,7 +5,7 @@ Created on Tue Jan  5 16:28:50 2016
 @author: alhamood
 """
 
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect
 from wtforms import Form, validators, fields, widgets
 
 import numpy as np
@@ -13,8 +13,13 @@ import pandas as pd
 import seaborn as sbc
 import simplejson as json
 import os
+import sys
+import logging
 
 app = Flask(__name__)
+
+app.logger.addHandler(logging.StreamHandler(sys.stdout))
+app.logger.setLevel(logging.ERROR)
 
 # Load model components
 day_residuals = pd.read_csv('datafiles/Day_Residuals.csv', index_col = 0)
@@ -46,6 +51,11 @@ with open('datafiles/Daily_Avg_Starts.json') as json_data:
 class DateForm(Form):
 	test_date = fields.TextField('Experiment Date',  [
 	    validators.InputRequired(message='Experiment Date is Required')])
+
+
+@app.route('/')
+def main():
+  return redirect('/index')    
 
 @app.route('/index', methods=['GET', 'POST'])
 def index():
