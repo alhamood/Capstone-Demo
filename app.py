@@ -50,7 +50,6 @@ Trip_Times = Trip_Data.index
 first_date = min(Trip_Times)
 last_date = max(Trip_Times)
 Zone_Names = Trip_Data['Zone'].unique()
-print(Zone_Names)
 
 with open('datafiles/Daily_Avg_Starts.json') as json_data:
 	DailyAvgStarts = json.load(json_data)
@@ -61,7 +60,7 @@ class DateForm(Form):
 	    validators.InputRequired(message='Experiment Date is Required')])
 
 def Make_Hour_Plot(predicted_starts, observed_starts):
-	p = figure(plot_width=400, plot_height=400, title='Hourly Ride Starts')
+	p = figure(plot_width=500, plot_height=300, title='Hourly Ride Starts')
 	p.line(range(24), observed_starts[0].tolist(), color='firebrick', alpha = .8, legend='Observed', line_width=4)
 	p.line(range(24), predicted_starts[0].tolist(), color='navy', alpha = .5, legend='Predicted', line_width=4)
 	p.xaxis.axis_label = 'Hour of Day'
@@ -111,15 +110,11 @@ def index():
 		actual_starts = pd.DataFrame([sum(test_day_starts.hour==hr) for hr in range(24)])
 		hour_plot = Make_Hour_Plot(predicted_starts, actual_starts)
 		day_total_prediction = predicted_starts.sum().tolist()
-		print(day_total_prediction)
 		zone_predictions = [Zone_Factors[zone]*(day_total_prediction[0]/5) for zone in range(5)]
-		print(len(test_day_starts))
-		print(zone_predictions)		
 		test_day_zones = Trip_Data.loc[selector, 'Zone']
 		zone_observations = [np.NaN]*5
 		for z_index, zone in enumerate(Zone_Names):
 			zone_observations[z_index] = sum((test_day_zones==zone).tolist())
-		print(zone_observations)
 		zone_plot = Make_Zones_Plot(zone_predictions, zone_observations)
 		
 		script, div = components(hour_plot)
@@ -144,4 +139,4 @@ def show_data():
 		
 if __name__ == '__main__':
   port = int(os.environ.get("PORT", 5000))
-  app.run(host='0.0.0.0', port=port, debug=True)
+  app.run(host='0.0.0.0', port=port, debug=False)
