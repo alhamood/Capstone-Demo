@@ -13,9 +13,12 @@ import os
 
 DailyStarts = pd.read_csv('~/Data Incubator/Capstone Project/Data/Cleaned CSVs/Bay/DailyStarts.csv', index_col = 0)
 DailyStarts.index = pd.to_datetime(DailyStarts.index, infer_datetime_format=True)
+DailyEnds = pd.read_csv('~/Data Incubator/Capstone Project/Data/Cleaned CSVs/Bay/DailyEnds.csv', index_col = 0)
+DailyEnds.index = pd.to_datetime(DailyEnds.index, infer_datetime_format=True)
 DailySums = np.sum(DailyStarts, axis=1)
 DailyAvgStarts = (sum(DailyStarts.sum()))/float(len(DailyStarts))
 AllTrips = pd.read_csv('~/Data Incubator/Capstone Project/Data/Bay Area/Combined CSVs/BayTrips_All.csv', index_col = 0)
+AllTrips.index = pd.to_datetime(AllTrips.index, infer_datetime_format=True)
 AllTrips = AllTrips[['Start Terminal', 'End Terminal']]
 AllTrips['Zone'] = ''
 stations = pd.read_csv('~/Data Incubator/Capstone Project/Data/Cleaned CSVs/Bay/201408_station_data.csv')
@@ -23,6 +26,13 @@ stations.index = stations['station_id']
 for station in stations['station_id']:
 	selector = (AllTrips['Start Terminal']==station).tolist()
 	AllTrips.loc[selector, 'Zone'] = stations.loc[station, 'landmark']
+	
+Weekdays = [False] * len(AllTrips.index)
+for t_index, trip in enumerate(AllTrips.index):
+	if trip.weekday() < 5:
+		Weekdays[t_index] = True
+		
+AllTrips['IsWeekday'] = Weekdays
 
 AllTrips.to_csv('/Users/alhamood/Data Incubator/Capstone Project/Demo/datafiles/Trip_Data.csv')
 
@@ -54,6 +64,24 @@ for month in range(1, 13):
 	Month_Totals[month-1] = sum(DailyStarts[selector].sum(axis=1))
 Month_Factors = [Month_Totals[month-1]/(float(sum(Month_Totals))/12) for month in range(1,13)]
 
+# Hourly factors, weekdays
+Start_Hours = pd.to_datetime(AllTrips.index).hour
+Hour_Totals = [np.NaN]*24
+for hour in range(24):
+	selector = (Start_Hours==hour) 
+	selector = (selector & AllTrips['IsWeekday']).tolist()
+	Hour_Totals[hour] = sum(selector)
+Hour_Factors_Weekdays = [Hour_Totals[hour]/(float(sum(Hour_Totals))/24) for hour in range(24)]
+
+# Hourly factors, weekends
+Start_Hours = pd.to_datetime(AllTrips.index).hour
+Hour_Totals = [np.NaN]*24
+for hour in range(24):
+	selector = (Start_Hours==hour) 
+	selector = (selector & np.invert(AllTrips['IsWeekday'])).tolist()
+	Hour_Totals[hour] = sum(selector)
+Hour_Factors_Weekends = [Hour_Totals[hour]/(float(sum(Hour_Totals))/24) for hour in range(24)]
+
 # Hourly factors
 Start_Hours = pd.to_datetime(AllTrips.index).hour
 Hour_Totals = [np.NaN]*24
@@ -84,6 +112,13 @@ with open('/Users/alhamood/Data Incubator/Capstone Project/Demo/datafiles/Month_
 
 with open('/Users/alhamood/Data Incubator/Capstone Project/Demo/datafiles/Hour_Factors.json', 'w') as outfile:
 	json.dump(Hour_Factors, outfile)
+	
+with open('/Users/alhamood/Data Incubator/Capstone Project/Demo/datafiles/Hour_Factors_Weekdays.json', 'w') as outfile:
+	json.dump(Hour_Factors_Weekdays, outfile)
+
+with open('/Users/alhamood/Data Incubator/Capstone Project/Demo/datafiles/Hour_Factors_Weekends.json', 'w') as outfile:
+	json.dump(Hour_Factors_Weekends, outfile)	
+	
 #DoW_Factors.to_csv('/Users/alhamood/Data Incubator/Capstone Project/Demo/datafiles/Hour_Factors.csv')	
 	
 with open('/Users/alhamood/Data Incubator/Capstone Project/Demo/datafiles/Daily_Avg_Starts.json', 'w') as outfile:
