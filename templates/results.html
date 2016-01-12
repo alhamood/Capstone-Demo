@@ -14,11 +14,11 @@
 <div class=page>
   <h3>Bay Area bike share query for date {{date}}:</h3>
   <div class=page>
-  <h4>Overall this day had {{tdr}} times the number of rides expected by the model</h4>
     {{plotdiv | safe}} {{zonediv | safe}}
   </div>
   <h4>Try another date?</h4>  <p>
     <form method="post" action="/index"> 
     <div>{{ form.test_date.label }}: {{ form.test_date() }}</div>
     </form>
+    <p>
 </div>

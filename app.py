@@ -34,8 +34,11 @@ DailyEnds.index = pd.to_datetime(DailyEnds.index, infer_datetime_format=True)
 day_residuals = pd.read_csv('datafiles/Day_Residuals.csv', index_col = 0)
 day_residuals.index = pd.to_datetime(day_residuals.index)
 
-Station_Hour_Start_Factors = pd.read_csv('datafiles/Station_Hour_Start_Factors.csv', index_col=0)
-Station_Hour_End_Factors = pd.read_csv('datafiles/Station_Hour_End_Factors.csv', index_col=0)
+Station_Weekday_Hour_Start_Factors = pd.read_csv('datafiles/Station_Weekday_Hour_Start_Factors.csv', index_col=0)
+Station_Weekday_Hour_End_Factors = pd.read_csv('datafiles/Station_Weekday_Hour_End_Factors.csv', index_col=0)
+
+Station_Weekend_Hour_Start_Factors = pd.read_csv('datafiles/Station_Weekend_Hour_Start_Factors.csv', index_col=0)
+Station_Weekend_Hour_End_Factors = pd.read_csv('datafiles/Station_Weekend_Hour_End_Factors.csv', index_col=0)
 
 with open('datafiles/DoW_Factors.json') as json_data:
 	DoW_Factors = json.load(json_data)
@@ -89,9 +92,8 @@ def Make_Stations_Plot(predicted_nets, observed_nets):
 	df['NetBikes'] = net_bikes
 	df['Group'] = ['Predicted']*len(Station_Names) + ['Observed']*len(Station_Names)
 	df['Station'] = Station_Names * 2
-	#df.columns = ['NetBikes', 'Group', 'Station']
 	p = Bar(df, label='Station', values='NetBikes', agg='median', group='Group',
-        title="Predicted and Observed NetBikes by Station", legend='top_right')
+        title="Predicted and Observed NetBikes by Station", legend='top_right', xgrid=True)
 	p.plot_width = 1300
 	p.plot_height = 500
 	p.y_range.start = -20
@@ -127,9 +129,13 @@ def index():
 		test_day_starts = pd.to_datetime(Trip_Times[selector])	
 		if test_day.weekday() < 5:
 			Hour_Factors = Hour_Factors_Weekdays
+			Station_Hour_Start_Factors = Station_Weekday_Hour_Start_Factors
+			Station_Hour_End_Factors = Station_Weekday_Hour_End_Factors
 		else:
 			Hour_Factors = Hour_Factors_Weekends
-			
+			Station_Hour_Start_Factors = Station_Weekend_Hour_Start_Factors
+			Station_Hour_End_Factors = Station_Weekend_Hour_End_Factors
+						
 		predicted_hour_factors = pd.DataFrame(pd.DataFrame(Hour_Factors)*DoW_Factors[test_day.weekday()]*Month_Factors[test_day.month-1])
 		predicted_starts = predicted_hour_factors*(DailyAvgStarts/24)
 		actual_starts = pd.DataFrame([sum(test_day_starts.hour==hr) for hr in range(24)])
