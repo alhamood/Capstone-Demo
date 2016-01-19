@@ -12,15 +12,16 @@
 {{plotscript | safe}}
 </head>
 <div class=page>
-  <h3>Bay Area bike share query for date {{date}}:</h3>
+  <h3>Bay Area bike share query for date {{date}} (PST)</h3>
+  <h3>Predicted Nets extend for {{hours}} hours from now:</h3>
   <div class=page>
-    {{plotdiv | safe}} {{zonediv | safe}}
+    {{plotdiv | safe}}
   </div>
-  <h4>Try another date?</h4>  <p>
-    <form method="post" action="/model-test"> 
-    <div>{{ form.test_date.label }}: {{ form.test_date() }}</div>
+  <h4>Try a different number of hours?</h4>  <p>
+    <form method="post" action="/live-predictions"> 
+    <div>{{ form.hours.label }}: {{ form.hours() }}</div>
     </form>
     <p>
     <a href="{{ url_for('index') }}">Back to home</a>
-    </p> 
+    </p>  
 </div>

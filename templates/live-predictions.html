@@ -7,12 +7,13 @@
 <img src="/static/bikes.jpg" alt="Bikes" style="width:400px;height200px">
 <div class=page>
   <h3>Bay Area bike share query:</h3>
-  <h4>{{ msg }} Please try again!</h4>  <p>
-    <form method="post" action="/index"> 
-    <div>{{ form.test_date.label }}: {{ form.test_date() }}</div>
-      {% for error in form.test_date.errors %}
+  <h4>How many hours into the future would you like to predict?</h4>  <p>
+    <form method="post" action="/live-predictions"> 
+    <div>{{ form.hours.label }}: {{ form.hours() }}
+      {% for error in form.hours.errors %}
         <span style="color: red;">[{{ error }}]</span>
-      {% endfor %}
+      {% endfor %}<p>
+    </div>
     </form>
     <p>
     <a href="{{ url_for('index') }}">Back to home</a>

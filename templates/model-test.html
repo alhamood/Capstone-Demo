@@ -7,12 +7,13 @@
 <img src="/static/bikes.jpg" alt="Bikes" style="width:400px;height200px">
 <div class=page>
   <h3>Bay Area bike share query:</h3>
-  <h4>{{ msg }} Please try again!</h4>  <p>
-    <form method="post" action="/index"> 
-    <div>{{ form.test_date.label }}: {{ form.test_date() }}</div>
+  <h4>Enter a date in the dataset to check model performance:</h4>  <p>
+    <form method="post" action="/model-test"> 
+    <div>{{ form.test_date.label }}: {{ form.test_date() }}
       {% for error in form.test_date.errors %}
         <span style="color: red;">[{{ error }}]</span>
-      {% endfor %}
+      {% endfor %}<p>
+    </div>
     </form>
     <p>
     <a href="{{ url_for('index') }}">Back to home</a>
