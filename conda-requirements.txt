@@ -3,3 +3,4 @@ numpy
 pandas
 bokeh=0.10.0
 wtforms
+scikit-learn

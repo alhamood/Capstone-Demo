@@ -5,16 +5,14 @@
   <title>Bikes!</title>
 <link
     href="//cdn.pydata.org/bokeh/release/bokeh-0.10.0.min.css"
-    rel="stylesheet" type="text/css">
-<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
-<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">    
+    rel="stylesheet" type="text/css">  
 <script type="text/javascript" src="//cdn.pydata.org/bokeh/release/bokeh-0.10.0.min.js"></script>
 {{plotscript | safe}}
 </head>
 <div class=page>
-  <h3>Bay Area bike share query for date {{date}}:</h3>
+  <h3>NYC bike share query for date {{date}}:</h3>
   <div class=page>
-    {{plotdiv | safe}} {{zonediv | safe}}
+    {{plotdiv | safe}} 
   </div>
   <h4>Try another date?</h4>  <p>
     <form method="post" action="/model-test"> 

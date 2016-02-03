@@ -8,7 +8,7 @@
 <div class=page>
   <h3>Bay Area bike share query:</h3>
   <h4>{{ msg }} Please try again!</h4>  <p>
-    <form method="post" action="/index"> 
+    <form method="post" action="/model-test"> 
     <div>{{ form.test_date.label }}: {{ form.test_date() }}</div>
       {% for error in form.test_date.errors %}
         <span style="color: red;">[{{ error }}]</span>

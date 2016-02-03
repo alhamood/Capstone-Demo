@@ -1,0 +1,22 @@
+
+<!doctype html>
+<head>
+  <meta charset="utf-8">
+  <title>Bikes!</title>
+</head>
+<img src="/static/bikes.jpg" alt="Bikes" style="width:400px;height200px">
+<div class=page>
+  <h3>New York bike share query:</h3>
+  <p>
+  Behind this website is a predictive model using factors such as hour, month, day of the week,
+  and weather, along with station-specific factors. Using this model, I predict the change
+  in bikes over a user-defined period of time. This is visualized using CartoDB's API,
+  and the surplus number of bikes expected at each station following this time period is
+  also shown. <p>
+  You can also check predictions of the model for a previous date to view accuracy. This model
+  is based on an extremely random forest, although for predictions greater than 24 hours 
+  into the future, a decision tree is used which produces faster results.
+  <h4>What would you like to do?</h4>  <p>
+  <p><a href="{{ url_for('model_test') }}">Test model</a> predictions for a past date</p>  
+  <p><a href="{{ url_for('live_predictions') }}">Live predictions</a> and current bikes by station</p>
+</div>

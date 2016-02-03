@@ -6,7 +6,7 @@ Created on Tue Jan 26 14:17:46 2016
 """
 
 from flask import Flask, render_template, request, redirect, url_for
-from wtforms import Form, validators, fields, widgets
+from wtforms import Form, validators, fields
 import numpy as np
 import pandas as pd
 import simplejson as json
@@ -17,10 +17,16 @@ from datetime import timedelta
 from bokeh.plotting import figure
 from bokeh.embed import components
 from bokeh.charts import Bar, show, output_file
+import pandas as pd
+import numpy as np
+import math
+import holidays
+from sklearn.externals import joblib
 import os
 import sys
 import logging
 import time
+import datetime
 
 app = Flask(__name__)
 app.logger.addHandler(logging.StreamHandler(sys.stdout))
@@ -34,25 +40,30 @@ weekday_start_factors = pd.read_csv('datafiles/weekday_start_factors_nov15.csv',
 weekday_end_factors = pd.read_csv('datafiles/weekday_end_factors_nov15.csv', index_col=0)
 weekend_start_factors = pd.read_csv('datafiles/weekend_start_factors_nov15.csv', index_col=0)
 weekend_end_factors = pd.read_csv('datafiles/weekend_end_factors_nov15.csv', index_col=0)
+hourly_data_features = pd.read_csv('datafiles/hourly_data_features.csv', index_col=0)
+hourly_data_features.index = pd.to_datetime(hourly_data_features.index)
+us_holidays = holidays.UnitedStates()
+weather_df = pd.read_csv('datafiles/weather_df.csv', index_col=0)
+ 
 live_req = requests.get('https://www.citibikenyc.com/stations/json')
 live_data = live_req.json()
 start_time = pd.to_datetime(live_data['executionTime'])
 stations_df = pd.DataFrame(live_data['stationBeanList'])
 stations_df.index = stations_df['id'].tolist()
 station_ids = weekday_start_factors.keys()
-weekday_avg_starts = 25782.42
-weekday_avg_ends = 25775.65
-weekend_avg_starts = 20221.94
-weekend_avg_ends = 20237.42
+first_date = pd.to_datetime('2013-07-01')
+last_date = pd.to_datetime('2015-11-30')
 
-weekday_month_factors = pd.read_csv('datafiles/weekday_month_factors.csv', index_col=0)
-weekend_month_factors = pd.read_csv('datafiles/weekend_month_factors.csv', index_col=0)
-weekday_hour_factors = pd.read_csv('datafiles/weekday_hour_factors.csv', index_col=0)
-weekend_hour_factors = pd.read_csv('datafiles/weekend_hour_factors.csv', index_col=0)
+full_model = joblib.load('model/extra_trees.pkl')
+trees_model = joblib.load('model/extra_trees_nw.pkl')
+reg_tree = joblib.load('model/reg_tree.pkl')
+feature_columns_noweath = ['System Day', 'DoYsin',
+                   'DoYcos', 'HoDsin', 'HoDcos',
+                    'DoWsin', 'DoWcos', 'Holiday']
 
 class DateForm(Form):
-    test_date = fields.TextField('Experiment Date',  [
-        validators.InputRequired(message='Experiment Date is Required')])
+    test_date = fields.TextField('Test Date',  [
+        validators.InputRequired(message='Test Date is Required')])
         
 class HoursForm(Form):
     hours = fields.IntegerField('Hours from current time to predict', [
@@ -60,19 +71,33 @@ class HoursForm(Form):
         validators.NumberRange(min=0, max=1000, message='0-1000 hours only please')])
         
 def get_predictions(start_time, hours):
+    if hours > 24:
+        model = reg_tree
+    else:
+        model = trees_model
     net_ride_counter = (weekday_start_factors.loc[0] -
                         weekday_start_factors.loc[0]
                         )
     for predicted_hour in range(hours):
         hour_time = start_time + timedelta(hours=predicted_hour)
+        tt = hour_time.timetuple()
+        DoYsin = (math.sin(2 * math.pi * tt.tm_yday / 365))
+        DoYcos = (math.cos(2 * math.pi * tt.tm_yday / 365))
+        HoDsin = (math.sin(2 * math.pi * tt.tm_hour / 24))
+        HoDcos = (math.cos(2 * math.pi * tt.tm_hour / 24))
+        DoWsin = (math.sin(2 * math.pi * tt.tm_wday / 7))
+        DoWcos = (math.cos(2 * math.pi * tt.tm_wday / 7))
+        if hour_time in us_holidays:
+            Holiday = (int(1))
+        else:
+            Holiday = (int(0))
+        pred_hour_rides = model.predict((700, DoYsin, DoYcos, HoDsin, HoDcos, DoWsin, DoWcos, Holiday))[0]
         if hour_time.weekday() < 5:
             Station_Hour_Start_Factors = weekday_start_factors
             Station_Hour_End_Factors = weekday_end_factors
-            pred_hour_rides = weekday_avg_starts * weekday_month_factors.loc[hour_time.month-1, 'factors'] * weekday_hour_factors.loc[hour_time.hour, 'factors']
         else:
             Station_Hour_Start_Factors = weekend_start_factors
             Station_Hour_End_Factors = weekend_end_factors
-            pred_hour_rides = weekend_avg_starts * weekend_month_factors.loc[hour_time.month-1, 'factors'] * weekend_hour_factors.loc[hour_time.hour, 'factors']
         pred_hour_starts = Station_Hour_Start_Factors.loc[hour_time.hour, :] * pred_hour_rides
         pred_hour_ends = Station_Hour_End_Factors.loc[hour_time.hour, :] * pred_hour_rides
         pred_hour_nets = (pred_hour_ends -
@@ -147,12 +172,22 @@ def update_cartodb2(values):
 @app.route('/')
 def main():
     return redirect('/index')
-  
+
 
 @app.route('/index')
 def index():
-    return redirect('/live-predictions')
+    return render_template('index_new.html')
  
+
+def Make_Hour_Plot(predicted_starts, observed_starts):
+    p = figure(plot_width=500, plot_height=300, title='Hourly Ride Starts')
+    p.line(range(24), observed_starts, color='firebrick', alpha = .8, legend='Observed', line_width=4)
+    p.line(range(24), predicted_starts, color='navy', alpha = .5, legend='Predicted', line_width=4)
+    p.xaxis.axis_label = 'Hour of Day'
+    p.yaxis.axis_label = 'Number of rides'
+    p.legend.orientation = "top_left"
+    return p
+
 
 @app.route('/live-predictions', methods=['GET', 'POST'])
 def live_predictions():
@@ -187,6 +222,62 @@ def live_predictions():
         form = HoursForm()
         return render_template('live-results.html', form=form, date=start_time, hours=prediction_length)
 
+
+@app.route('/model-test', methods=['GET', 'POST'])
+def model_test():
+    if request.method=='GET':
+        form = DateForm()
+        return render_template('model-test.html', form=form)
+    else:
+        form = DateForm(request.form)    
+        if not form.validate():
+            return render_template('model-test.html', form=form)
+        test_day = form.data['test_date']
+        try:
+            test_day = pd.to_datetime(test_day)
+        except ValueError:
+            return render_template('baddate.html', msg='Sorry, date not understood. ', form=DateForm())
+        if test_day < first_date:
+            msg = 'Date not in dataset. First date is '+str(first_date.date())
+            return render_template('baddate.html', msg=msg, form=DateForm())
+        if test_day > last_date:
+            msg = 'Date not in dataset. Last date is '+str(last_date.date())
+            return render_template('baddate.html', msg=msg, form=DateForm())
+
+        start_time = test_day 
+        predicted_starts = []
+        observed_starts = []
+        for predicted_hour in range(24):
+            hour_time = start_time + timedelta(hours=predicted_hour)
+            tt = hour_time.timetuple()
+            DoYsin = (math.sin(2 * math.pi * tt.tm_yday / 365))
+            DoYcos = (math.cos(2 * math.pi * tt.tm_yday / 365))
+            HoDsin = (math.sin(2 * math.pi * tt.tm_hour / 24))
+            HoDcos = (math.cos(2 * math.pi * tt.tm_hour / 24))
+            DoWsin = (math.sin(2 * math.pi * tt.tm_wday / 7))
+            DoWcos = (math.cos(2 * math.pi * tt.tm_wday / 7))
+            if hour_time in us_holidays:
+                Holiday = (int(1))
+            else:
+                Holiday = (int(0))
+            Tmax = (weather_df.loc[hour_time.date().strftime('%Y-%m-%d'), 't_max'])
+            Tmin = (weather_df.loc[hour_time.date().strftime('%Y-%m-%d'), 't_min'])
+            Precip = (weather_df.loc[hour_time.date().strftime('%Y-%m-%d'), 'precip'])
+            Snow = (weather_df.loc[hour_time.date().strftime('%Y-%m-%d'), 'snow_depth'])
+            Snowfall = (weather_df.loc[hour_time.date().strftime('%Y-%m-%d'), 'snowfall'])
+            Wind = (weather_df.loc[hour_time.date().strftime('%Y-%m-%d'), 'windspeed'])
+            
+            predicted_starts.append(full_model.predict((700, DoYsin, DoYcos, HoDsin, HoDcos, DoWsin, DoWcos, Holiday,
+                                                     Tmax, Tmin, Precip, Snow, Snowfall, Wind))[0])
+            observed_starts.append(hourly_data_features.loc[hour_time, 'Rides'])                      
+        
+        hour_plot = Make_Hour_Plot(predicted_starts, observed_starts)
+
+        script, div = components(hour_plot)
+
+        day = form.data['test_date']
+        form = DateForm()
+        return render_template('results.html', form=form, date=day, plotscript=script, plotdiv=div)
 
 if __name__ == '__main__':
     #port = int(os.environ.get("PORT", 5000))
