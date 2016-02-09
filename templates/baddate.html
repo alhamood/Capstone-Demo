@@ -2,11 +2,19 @@
 <!doctype html>
 <head>
   <meta charset="utf-8">
-  <title>Bikes!</title>
+  <title>Albert Hamood, Capstone Project, Data Incubator Winter 2016</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+  <style>
+    p { padding-left: 2% }
+    h3 { padding-left: 1% }
+    h4 { padding-left: 1% }
+    form {padding-left: 2% }
+  </style>     
 </head>
 <img src="/static/bikes.jpg" alt="Bikes" style="width:400px;height200px">
 <div class=page>
-  <h3>Bay Area bike share query:</h3>
+  <h3>NYC Bike Model Prediction Query:</h3>
   <h4>{{ msg }} Please try again!</h4>  <p>
     <form method="post" action="/model-test"> 
     <div>{{ form.test_date.label }}: {{ form.test_date() }}</div>

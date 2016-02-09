@@ -1,56 +1,63 @@
-
 <!doctype html>
 <head>
   <meta charset="utf-8">
-  <title>Citibike Model Motivation and Analysis</title>
-    <link rel="shortcut icon" href="http://cartodb.com/assets/favicon.ico" />
-    <style>
-      html, body, #map {
-        height: 90%;
-        width: 90%;
-        padding: 0;
-        margin: 0;
-      }
-    </style>
-    <link rel="stylesheet" href="http://libs.cartocdn.com/cartodb.js/v3/3.15/themes/css/cartodb.css" />  
+  <title>Albert Hamood, Capstone Project, Data Incubator Winter 2016</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+  <style>
+    p { padding-left: 2% }
+    h3 { padding-left: 1% }
+    h4 { padding-left: 1% }
+  </style>
 </head>
+<body>
 <div class=page>
+<h3>
+  The goal of my project is to help the Citibike system efficiently solve a business problem.
+</h3> 
 <p>
-<h3>The goal of my project is to help the Citibike system efficiently solve a business problem.</h3> 
-Specifically, redistributing bikes among stations as efficiently as possible. As the following plot
- shows, left unchecked, some stations tend to accumulate bikes over time, while others tend to lose them.
- </p><p>
- This plot shows, for each station in a different color, the cumulative gain or loss of
- bikes for the history of the system:<p>
- <img src="/static/Cum_Bikes_Plot.png" alt="Bikes" style="width:800px;height600px">
-
-<h3>To solve this problem, I analyzed over 22 million bike trips, to build a predictive model of user behavior.</h3> 
-The model must be able to anticipate the patterns in user behavior. These patterns are defined by many
- features and temporal oscillations. For example, plotting total rides across the system's history by week 
- reveals seasonal effects and long-term growth trends: 
+  Specifically, redistributing bikes among stations as efficiently as possible. As the following plot
+  shows, left unchecked, some stations tend to accumulate bikes over time, while others tend to lose them.
+</p>
 <p>
-<img src="/static/Weekly_Rides_Plot.png" alt="Bikes" style="width:800px;height600px"><p>
- 
-Zooming in on a particular week, we can also observe daily temporal oscillations, as the hour of day 
-has a large effect on user behavior. These oscillations also take a different form depending 
-on the day of the week, with notable peaks corresponding to rush hour on weekdays:
+  This plot shows, for each station in a different color, the cumulative gain or loss of
+  bikes for the history of the system:
+</p>
+  <img src="/static/Cum_Bikes_Plot.png" alt="Bikes" style="width:800px;height600px">
+<h3>
+  To solve this problem, I analyzed over 22 million bike trips, to build a predictive model of user behavior.
+</h3> 
 <p>
-<img src="/static/Hourly_Rides_Plot.png" alt="Bikes" style="width:800px;height600px"><p>
-
-<h4>Station-specific factors</h4>
-A critical input to this model is the average change in bikes for each station. This map provides an 
-overview of the average net change in bikes per station, viewed geographically via CartoDB's API. 
-These data could be used to implement a baseline redistribution schedule of a desired frequency. 
-Mouse-over for station names and precise monthly expectations.
+  The model must be able to anticipate the patterns in user behavior. These patterns are defined by many
+  features and temporal oscillations. For example, plotting total rides across the system's history by week 
+  reveals seasonal effects and long-term growth trends: 
+</p>
+<img src="/static/Weekly_Rides_Plot.png" alt="Bikes" style="width:800px;height600px">
+<p> 
+  Zooming in on a particular week, we can also observe daily temporal oscillations, as the hour of day 
+  has a large effect on user behavior. These oscillations also take a different form depending 
+  on the day of the week, with notable peaks corresponding to rush hour on weekdays:
+</p>
+<img src="/static/Hourly_Rides_Plot.png" alt="Bikes" style="width:800px;height600px">
+<h4>
+  Station-specific factors
+</h4>
 <p>
-<script src="http://libs.cartocdn.com/cartodb.js/v3/3.15/cartodb.js"></script>
+  A critical input to this model is the average change in bikes for each station. This map provides an 
+  overview of the average net change in bikes per station, viewed geographically via CartoDB's API. 
+  These data could be used to implement a baseline redistribution schedule of a desired frequency. 
+  Mouse-over for station names and precise monthly expectations.
+</p>
 <iframe width="800" height="800" frameborder="0" src="https://alhamood.cartodb.com/viz/c5321706-cf61-11e5-b0a7-0ecfd53eb7d3/embed_map" allowfullscreen webkitallowfullscreen mozallowfullscreen oallowfullscreen msallowfullscreen></iframe>
 <p>
-For more details on how the model is constructed, and how it makes recommendations for bike relocations, 
-follow the first link here:
-
-  <p><a href="{{ url_for('model_details') }}">How does this work? Model details</a>
-
-  <p>  <a href="{{ url_for('index') }}">Back to home</a>
-
+  For more details on how the model is constructed, and how it makes recommendations for bike relocations, 
+  follow the first link here:
+</p>
+<p>
+  <a href="{{ url_for('model_details') }}">How does this work? Model details</a>
+</p>
+<p>  
+  <a href="{{ url_for('index') }}">Back to home</a>
+</p>
 </div>
+</body>
