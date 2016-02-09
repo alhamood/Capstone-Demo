@@ -21,19 +21,17 @@
    <script src="http://libs.cartocdn.com/cartodb.js/v3/3.15/cartodb.js"></script>
    <script>
     window.onload = function() {
-      cartodb.createVis('map', 'https://alhamood.cartodb.com/api/v2/viz/f13afb68-cd06-11e5-8b5f-0e3ff518bd15/viz.json',
+      cartodb.createVis('map', 'https://alhamood.cartodb.com/api/v2/viz/55988200-ce75-11e5-84b1-0e674067d321/viz.json',
       {zoom: 13})
     }
     </script>
     <h3>NYC bike share query for date {{date}} (Eastern Standard) </h3>
-    <p>Predicted net bikes, and final bike surplus, for the period extending {{hours}} hours from now:</p>
+    <h4>Predictions are here; recommended redistributions are on the following page.</h4>
+    <p>Predicted net bikes, and final bike surplus, for the period extending {{hours}} hours from now (mouse-over for station details):</p>
 
     <div id="map"></div>
     <p>
-    <a href="{{ url_for('redistribute') }}">Continue to suggested redistributions</a>
-    </p> 
-    <p>
-    <a href="{{ url_for('choose_predictions') }}">Choose new time frame for predictions</a>
+    <a href="{{ url_for('redistribute_1w') }}">Continue to suggested redistributions</a>
     <p>
     <a href="{{ url_for('index') }}">Back to home</a>
     </p>  

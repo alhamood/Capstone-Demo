@@ -6,17 +6,24 @@
 </head>
 <img src="/static/bikes.jpg" alt="Bikes" style="width:400px;height200px">
 <div class=page>
-  <h3>New York bike share query:</h3>
+  <h3>New York bike share redistribution engine:</h3>
+  <h4>Capstone Project for Data Incubator Fellowship. </h4>
+  <h4>Created by Albert W. Hamood, January - February 2016</h4>
   <p>
   Behind this website is a predictive model using factors such as hour, month, day of the week,
   and weather, along with station-specific factors. Using this model, I predict the change
-  in bikes over a user-defined period of time. This is visualized using CartoDB's API,
-  and the surplus number of bikes expected at each station following this time period is
-  also shown. <p>
+  in bikes over a user-defined period of time. I then recommend stations as sinks and sources 
+  for an efficient redistribution of bikes among stations to meet upcoming demand. These data 
+  are then visually displayed using CartoDB's API.
+  <p>
+
   You can also check predictions of the model for a previous date to view accuracy. This model
   is based on an extremely random forest, although for predictions greater than 24 hours 
   into the future, a decision tree is used which produces faster results.
-  <h4>What would you like to do?</h4>  <p>
-  <p><a href="{{ url_for('model_test') }}">Test model</a> predictions for a past date</p>  
-  <p><a href="{{ url_for('live_predictions') }}">Live predictions</a> and current bikes by station</p>
+  <p><h4>Primary functionality here:</h4></p>
+  <a href="{{ url_for('choose_predictions') }}">Live predictions and redistribution recommendations</a>
+  <p><h4>Other options:</h4></p>
+  <a href="{{ url_for('model_test') }}">Test model predictions for a past date</a> 
+  <p><a href="{{ url_for('analysis') }}">Motivation and analysis</a>
+  <p><a href="{{ url_for('model_details') }}">How does this work? Model details</a>
 </div>

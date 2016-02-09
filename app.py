@@ -16,17 +16,11 @@ import urllib2
 from datetime import timedelta
 from bokeh.plotting import figure
 from bokeh.embed import components
-from bokeh.charts import Bar, show, output_file
-import pandas as pd
-import numpy as np
 import math
 import holidays
 from sklearn.externals import joblib
-import os
 import sys
 import logging
-import time
-import datetime
 
 app = Flask(__name__)
 app.logger.addHandler(logging.StreamHandler(sys.stdout))
@@ -61,6 +55,9 @@ feature_columns_noweath = ['System Day', 'DoYsin',
                    'DoYcos', 'HoDsin', 'HoDcos',
                     'DoWsin', 'DoWcos', 'Holiday']
 
+with open('datafiles/stn_monthly_data.json') as json_data:
+    stn_monthly_data = json.load(json_data)
+
 class DateForm(Form):
     test_date = fields.TextField('Test Date',  [
         validators.InputRequired(message='Test Date is Required')])
@@ -69,7 +66,14 @@ class HoursForm(Form):
     hours = fields.IntegerField('Hours from current time to predict', [
         validators.InputRequired(message='Integer number of hours required'),
         validators.NumberRange(min=0, max=1000, message='0-1000 hours only please')])
-        
+
+class PredictionForm(Form):
+    time = fields.SelectField('Time to predict ', choices=[
+      ('6h', '6 hours'),
+      ('24h', '24 hours'),   
+      ('1w', '1 week')])
+
+
 def get_predictions(start_time, hours):
     if hours > 24:
         model = reg_tree
@@ -107,21 +111,26 @@ def get_predictions(start_time, hours):
     return net_ride_counter
 
 
-def update_cartodb(values):
+def update_cartodb(mapdata, tablename):
     rows = []
-    for index, station in enumerate(station_ids):
+    for station in station_ids:
         try:
-            rows.append(
+            if mapdata.loc[int(station), 'total_docks']:
+                rows.append(
             '(' +
             'CDB_LatLng(' + str(stations_df.loc[int(station), 'latitude']) + ', ' +
             str(stations_df.loc[int(station), 'longitude']) + '), ' +
-            str(values[index]) 
+            "'" + str(mapdata.loc[int(station), 'availableBikes']) + ' / ' + str(mapdata.loc[int(station), 'total_docks']) + "', " +
+            "'" + str(stations_df.loc[int(station), 'stationName']) + "', " +
+            "'" + str(int(mapdata.loc[int(station), 'pred_bikes'])) + ' / ' + str(mapdata.loc[int(station), 'total_docks']) + "', " +
+            "'" + str(int(mapdata.loc[int(station), 'pred_change'])) + "', " +
+            str(mapdata.loc[int(station), 'pred_bikes'] / float(mapdata.loc[int(station), 'total_docks']))
             + ')'
-            )
+                )
         except:
-            pass
-    delete = "TRUNCATE TABLE nyc_netbikes"
-    insert = "INSERT INTO nyc_netbikes (the_geom, predicted_net_bikes) (VALUES %s)" % ','.join(rows)
+            pass    
+    delete = "TRUNCATE TABLE " + tablename
+    insert = "INSERT INTO " + tablename + " (the_geom, current_bikes, name, predicted_bikes, predicted_change, status) (VALUES %s)" % ','.join(rows)
     url = "https://%s.cartodb.com/api/v1/sql" % username
     params = {
         'api_key' : API_KEY, # our account apikey, don't share!
@@ -138,21 +147,25 @@ def update_cartodb(values):
     response.close()
 
 
-def update_cartodb2(values):
+def update_cartodb_dist(mapdata, tablename):
     rows = []
-    for index, station in enumerate(station_ids):
+    for station in station_ids:
         try:
-            rows.append(
+            if mapdata.loc[int(station), 'total_docks']:
+                rows.append(
             '(' +
             'CDB_LatLng(' + str(stations_df.loc[int(station), 'latitude']) + ', ' +
             str(stations_df.loc[int(station), 'longitude']) + '), ' +
-            str(values.loc[int(station), 0]) 
+            "'" + str(mapdata.loc[int(station), 'availableBikes']) + ' / ' + str(mapdata.loc[int(station), 'total_docks']) + "', " +
+            "'" + str(stations_df.loc[int(station), 'stationName']) + "', " +
+            "'" + str(int(mapdata.loc[int(station), 'pred_bikes'])) + ' / ' + str(mapdata.loc[int(station), 'total_docks']) + "', " +
+            str(mapdata.loc[int(station), 'redist'])
             + ')'
-            )
+                )
         except:
-            pass
-    delete = "TRUNCATE TABLE nyc_surpluses"
-    insert = "INSERT INTO nyc_surpluses (the_geom, predicted_surplus) (VALUES %s)" % ','.join(rows)
+            pass  
+    delete = "TRUNCATE TABLE " + tablename
+    insert = "INSERT INTO " + tablename + " (the_geom, current_bikes, name, predicted_bikes, status) (VALUES %s)" % ','.join(rows)
     url = "https://%s.cartodb.com/api/v1/sql" % username
     params = {
         'api_key' : API_KEY, # our account apikey, don't share!
@@ -189,16 +202,58 @@ def Make_Hour_Plot(predicted_starts, observed_starts):
     return p
 
 
+@app.route('/choose-predictions', methods=['GET', 'POST'])
+def choose_predictions():
+    form = PredictionForm()
+    return render_template('choose-predictions.html', form=form)
+
+
+@app.route('/redistribute-24h', methods=['GET', 'POST'])
+def redistribute_24h():
+    return render_template('redistribute-24h.html')
+
+
+@app.route('/redistribute-6h', methods=['GET', 'POST'])
+def redistribute_6h():
+    return render_template('redistribute-6h.html')
+
+
+@app.route('/redistribute-1w', methods=['GET', 'POST'])
+def redistribute_1w():
+    return render_template('redistribute-1w.html')
+
+
+@app.route('/model-details', methods=['GET', 'POST'])
+def model_details():
+    return render_template('model-details.html')
+
+
+@app.route('/analysis', methods=['GET', 'POST'])
+def analysis():
+    return render_template('analysis.html')
+
+
 @app.route('/live-predictions', methods=['GET', 'POST'])
 def live_predictions():
     if request.method == 'GET':
         form = HoursForm()
         return render_template('live-predictions.html', form=form)
     else:
-        form = HoursForm(request.form)
+        form = PredictionForm(request.form)
         if not form.validate():
-            return render_template('live-predictions.html', form=form)
-        prediction_length = form.data['hours']
+            return render_template('choose-predictions.html', form=form)
+        if form.data['time'] == '6h':
+            tablename = 'nyc_prediction_6h'
+            disttablename = 'nyc_redistribution_6h'
+            prediction_length = 6
+        elif form.data['time'] == '24h':
+            tablename = 'nyc_prediction'
+            disttablename = 'nyc_redistribution'
+            prediction_length = 24
+        else:
+            tablename = 'nyc_prediction_1w'
+            disttablename = 'nyc_redistribution_1w'
+            prediction_length = 168 
         
         ## Get live data from NY Citibike API --
         live_req = requests.get('https://www.citibikenyc.com/stations/json')
@@ -209,18 +264,82 @@ def live_predictions():
         
         # Get model predictions and compare to available bikes --
         predictions = get_predictions(start_time, prediction_length)    
-        update_cartodb(predictions.tolist())
         
         # Get predicted surpluses
-        surpluses = pd.DataFrame(stations_df['availableBikes'].tolist(), index=stations_df['id'].tolist())
-        for stn in surpluses.index:
+        mapdata = pd.DataFrame(stations_df['availableBikes'].tolist(), columns=['availableBikes'], index=stations_df['id'].tolist())
+        mapdata['pred_change'] = np.nan
+        mapdata['pred_bikes'] = np.nan
+        mapdata['total_docks'] = np.nan
+        for stn in mapdata.index:
             if str(stn) in predictions.index:
-                surpluses.loc[stn] += predictions.loc[(str(stn))]
-        update_cartodb2(surpluses)
+                mapdata.loc[stn, 'pred_change'] = predictions.loc[(str(stn))]
+                mapdata.loc[stn, 'pred_bikes'] = mapdata.loc[stn, 'availableBikes'] + predictions.loc[(str(stn))]
+                mapdata.loc[stn, 'total_docks'] = stations_df.loc[stn, 'availableBikes'] + stations_df.loc[stn, 'availableDocks']                
+        update_cartodb(mapdata, tablename)
+
+        # Now compute redistributions
+        stations_to_receive = []
+        stations_to_give = []
         
+        # Loop through stations and determine if they have bikes to give, or need bikes
+        for stn in mapdata.index:
+            try:
+                stn_m_net = int(stn_monthly_data[str(stn)]['monthly_net'])
+                stn_bikes = mapdata.loc[stn, 'pred_bikes']
+                stn_capacity = mapdata.loc[stn, 'total_docks']
+                stn_current = mapdata.loc[stn, 'availableBikes']       
+                if stn_m_net > 0:  # these stations are gaining bikes
+                    if stn_bikes < 1:
+                        stations_to_receive.append([stn, int(stn_capacity / float(10))])
+                    elif stn_bikes > .8 * stn_capacity:
+                        max_give = int(stn_current - 3)  # Keep three bikes
+                        optimal_give = int(stn_bikes - (stn_capacity * .25))
+                        stations_to_give.append([stn, min(max_give, optimal_give)])
+                else:              # these stations are losing bikes
+                    if stn_bikes < 1:
+                        to_fill = stn_capacity - stn_current - 2 # leave a couple open slots
+                        for_month = -stn_m_net
+                        stations_to_receive.append([stn, int(min(to_fill, for_month))])
+                    elif stn_bikes > stn_capacity:
+                        stations_to_give.append([stn, int(stn_bikes - (stn_capacity * .9))])
+            except:
+                pass   # So new stations don't crash the app
+        give_df = pd.DataFrame(stations_to_give).sort(columns=[1], ascending=False)
+        receive_df = pd.DataFrame(stations_to_receive).sort(columns=[1], ascending=False)
+        total_gives = give_df.loc[:, 1].sum()
         
-        form = HoursForm()
-        return render_template('live-results.html', form=form, date=start_time, hours=prediction_length)
+        # Roughly balance the gives and receives
+        total_receives = receive_df.loc[:, 1].sum()
+        if total_gives > total_receives:
+            cumsum = give_df.loc[:, 1].cumsum()
+            cumsum = cumsum < total_receives
+            cumsum = cumsum.tolist()
+            give_df = give_df[cumsum]
+        else:
+            cumsum = receive_df.loc[:, 1].cumsum()
+            cumsum = cumsum < total_gives
+            cumsum = cumsum.tolist()
+            receive_df = receive_df[cumsum]
+        mapdata['redist'] = np.nan
+        for stn_index in receive_df.index:
+            mapdata.loc[receive_df.loc[stn_index, 0], 'redist'] = receive_df.loc[stn_index, 1]
+        for stn_index in give_df.index:
+            mapdata.loc[give_df.loc[stn_index, 0], 'redist'] = -(give_df.loc[stn_index, 1])
+        selector = np.isnan(mapdata['redist'])
+        selector = [not x for x in selector]
+        distdata = mapdata[selector]
+        
+        # Push the recommended distributions to cartodb for mapping
+        update_cartodb_dist(distdata, disttablename)
+        
+        # Finally render first template with map of expected changes;
+        # this map then links to the next map, of suggested redistributions
+        if form.data['time'] == '6h':
+            return render_template('live-results_6h.html', date=start_time, hours=prediction_length)
+        elif form.data['time'] == '24h':
+            return render_template('live-results_24h.html', date=start_time, hours=prediction_length)
+        else:
+            return render_template('live-results_1w.html', date=start_time, hours=prediction_length)        
 
 
 @app.route('/model-test', methods=['GET', 'POST'])
@@ -278,6 +397,7 @@ def model_test():
         day = form.data['test_date']
         form = DateForm()
         return render_template('results.html', form=form, date=day, plotscript=script, plotdiv=div)
+
 
 if __name__ == '__main__':
     #port = int(os.environ.get("PORT", 5000))

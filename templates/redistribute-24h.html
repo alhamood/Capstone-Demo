@@ -6,7 +6,7 @@
     <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
     <META HTTP-EQUIV="Pragma" CONTENT="no-cache">
     <META HTTP-EQUIV="Expires" CONTENT="-1">
-    <link rel="shortcut icon" href="http://cartodb.com/assets/favicon.ico" />
+    <link rel="shortcut icon" href="http://cartodb.com/assets/favicon.ico"/>
     <style>
       html, body, #map {
         height: 90%;
@@ -21,19 +21,15 @@
    <script src="http://libs.cartocdn.com/cartodb.js/v3/3.15/cartodb.js"></script>
    <script>
     window.onload = function() {
-      cartodb.createVis('map', 'https://alhamood.cartodb.com/api/v2/viz/f13afb68-cd06-11e5-8b5f-0e3ff518bd15/viz.json',
+      cartodb.createVis('map', 'https://alhamood.cartodb.com/api/v2/viz/d7524d08-cede-11e5-9c91-0ea31932ec1d/viz.json',
       {zoom: 13})
     }
     </script>
     <h3>NYC bike share query for date {{date}} (Eastern Standard) </h3>
-    <p>Predicted net bikes, and final bike surplus, for the period extending {{hours}} hours from now:</p>
-
+    <p>Recommended bike redistribution (mouse-over for station details, including number of bikes to withdraw or deposit):</p>
     <div id="map"></div>
     <p>
-    <a href="{{ url_for('redistribute') }}">Continue to suggested redistributions</a>
-    </p> 
-    <p>
-    <a href="{{ url_for('choose_predictions') }}">Choose new time frame for predictions</a>
+    <a href="{{ url_for('model_details') }}">How does this work?</a>
     <p>
     <a href="{{ url_for('index') }}">Back to home</a>
     </p>  

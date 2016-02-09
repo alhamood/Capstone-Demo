@@ -1,0 +1,71 @@
+
+<!doctype html>
+<head>
+  <meta charset="utf-8">
+  <title>Citibike Model Details</title>
+  <link rel="stylesheet" href="http://libs.cartocdn.com/cartodb.js/v3/3.15/themes/css/cartodb.css" />  
+    <style>
+      html, body, #map {
+        height: 90%;
+        width: 90%;
+        padding: 0;
+        margin: 0;
+      }
+    </style>
+</head>
+<div class=page>
+  <h3>Predictions are powered by a cross-validated extra random forest model, which predicts ride starts and ends per hour.</h3>
+  <p>
+I tested many forms of models for their ability to predict bike-sharing user behavior. These models 
+were evaluated by three-fold cross-validation. Here are the error scores for several tested models. 
+The mean model predicts the mean each hour, offered as a baseline. Decision-tree based models 
+perform better than a simple linear model:<p>
+
+ <img src="/static/Models_Compared.png" alt="Bikes" style="width:800px;height600px">
+
+
+<p>Following the selection of an extra-random forest model, its parameters were optimized by 
+a grid-search of parameter space. The following plot shows the features that went into the model,
+ organized by their importance to the decision tree:<p>
+
+ <img src="/static/Model_Features.png" alt="Bikes" style="width:800px;height600px">
+ 
+ 
+<p> It's important not to over-interpret these results. For example, snowfall shows up as relatively
+unimportant, because it rarely factors in decisions made by the model. But this is mostly because 
+snowfall is comparatively rare. To truly assess the importance of snowfall, further analyses are
+needed. For example, we could look only at days for which there was snowfall, and then see the 
+importance of the overall snowfall amount.
+
+<h4> Next, the system-wide hourly predictions are turned into station-by-station predictions.</h4>
+ To accomplish this, I obtained the average portion of hourly ride starts and ends for each 
+station in the system, conditioned on hour of day, separately for weekdays and weekends. By iterating 
+through each predicted hour, I can then obtain a predicted change in bikes for each station for
+ any arbitrary length of time. A detailed and mapped view of station-specific factors is 
+ available on the analysis page of this website.
+ 
+ <h4> Finally, recommended redistributions of bikes are computed.</h4>
+ The first step for this is to determine the predicted number of bikes at each station following 
+the time period of interest. From here, stations are split into two groups, based on whether they 
+gain or lose bikes on average, overall. 
+
+ For stations that typically lose bikes, they are used as 
+a source of bikes only if the prediction is they will be at capacity, and they are only brought down 
+to 90% capacity. They are used as a destination for bikes if they are predicted to run out 
+of bikes in the time-frame examined. In this case, the system recommends filling them nearly completely 
+(or with at least a month's supply), leaving a couple of open slots for bike deposits.
+<p>
+ For stations that typically gain bikes, they are used as a source of bikes if they are predicted 
+to be above 80% capacity. They are brought down to just a few bikes. They are only used as 
+a place to deposit bikes if they are predicted to be empty, in which case they are brought to 10% capacity.
+<p>
+ All of these choices can be easily modified based on the performance of this system in the wild,
+ which should be tracked in practice. These choices reduce the overall movement of bikes while 
+ still providing each station with enough bikes to accomodate predicted needs.
+<p>
+ Finally, the number of bikes withdrawn and deposited is approximately balanced by focusing 
+on the stations with the largest number of bikes to give or receive. 
+<p>
+<a href="{{ url_for('index') }}">Back to home</a>
+
+</div>
